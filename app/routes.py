@@ -1,7 +1,7 @@
 from flask import render_template, jsonify, request
 from app import db, app
 
-
+#trying a one page solution for now, instead of having separate pages for all three categories
 @app.route('/')
 @app.route('/index')
 def index():
@@ -18,14 +18,7 @@ def index():
     
     return render_template('index.html', title='Reaktor Warehouse', category=category, products=products)
 
-@app.route('/<category>')
-def get_category():
-    #get product listing based on category
-    #https://bad-api-assignment.reaktor.com/v2/products/<category>
-    pass
-    
-@app.route('/<manufacturer>')
-def get_manufacturer():
-    #get manufacturer availability
-    #https://bad-api-assignment.reaktor.com/v2/aivalibility/<manufacturer>
+@app.route('/switch_category')
+def switch_category():
+    #change category, redirect to index
     pass

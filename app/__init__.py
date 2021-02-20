@@ -17,4 +17,4 @@ bootstrap.init_app(app)
 
     
     
-from app import routes, product
+from app import routes, models
