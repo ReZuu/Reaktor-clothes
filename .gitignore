@@ -1,5 +1,9 @@
+# Packages
+__pycache__
+
+
 .env
 venv
 app.db
-__pycache__
-migrations
+warehouse.db
+logs
