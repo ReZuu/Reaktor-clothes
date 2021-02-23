@@ -1,26 +1,20 @@
 {% extends "base.html" %}
 
 {% block product_content %}
-	<style>
-	table, th, td {
-		border: 1px solid black; 
-		border-collapse: collapse;
-	}
-	th {
-		text-align: left;
-	}
-	</style>
-
-	<table style="width:100%">
-		<tr>
-			<th>Product - {{ category }}</th>
-			<th>Manufacturer</th>
-			<th>In Stock</th>
-		</tr>
+	<table class="table table-bordered table-hover">
+		<thead class="thead-light">
+			<tr>
+				<th>Product - {{ category }}</th>
+				<th>Manufacturer</th>
+				<th>In Stock</th>
+			</tr>
+		</thead>
+		<tbody>
 		{% for product in products %}
 			<tr>
 				{% include '_product.html' %}
 			</tr>
 		{% endfor %}
+		</tbody>
 	</table>
 {% endblock %}

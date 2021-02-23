@@ -7,30 +7,27 @@
 {% endblock %}
 
 {% block navbar %}
-	<nav class="navbar navbar-default">
+	<nav class="navbar navbar-expand-sm bg-dark navbar-dark fixed-top">
 		<div class="container-fluid">
-			<div class="navbar-header">
-				<h1>Reaktor Warehouse</h1>
-			</div>
-			<div class="collapse navbar-collapse" id="navbarNav">
-				<ul class="nav navbar-nav">
-					<li class="nav-item">
-						<a class="nav-link" aria-current="page" href="{{ url_for('switch_category', category='Gloves') }}">{{ 'Gloves' }}</a>
-					</li>
-					<li class="nav-item">
-						<a class="nav-link" href="{{ url_for('switch_category', category='Facemasks') }}">{{ 'Facemasks' }}</a>
-					</li>
-					<li class="nav-item">
-						<a class="nav-link" href="{{ url_for('switch_category', category='Beanies') }}">{{ 'Beanies' }}</a>
-					</li>
-				</ul>
-			</div>
+			<!-- Brand -->
+			{% if title %}
+				<span class="navbar-brand"><b>{{ title }}</b></span>
+			{% else %}
+				<span class="navbar-brand"><b>Reaktor Warehouse</b></span>
+			{% endif %}
+			
+			<!-- Buttons -->
+			<ul class="nav nav-tabs">
+				<li role="presentation" {% if category == 'Gloves' %} class="active"{% endif %}><a href="{{ url_for('switch_category', category='Gloves') }}">Gloves</a></li>
+				<li role="presentation" {% if category == 'Facemasks' %} class="active"{% endif %}><a href="{{ url_for('switch_category', category='Facemasks') }}">Facemasks</a></li>
+				<li role="presentation" {% if category == 'Beanies' %} class="active"{% endif %}><a href="{{ url_for('switch_category', category='Beanies') }}">Beanies</a></li>
+			</ul>
 		</div>
 	</nav>
 {% endblock %}
 
 {% block content %}
-	<div class="container">
+	<div class="container-fluid">
 		{% block product_content %}{% endblock %}
 	</div>
 {% endblock %}
