@@ -33,16 +33,19 @@ def init_db(Product):
     # alt.cons: if the list changes before the process is done for all products, it will cause issues
     # alt.pros: don't have a massive list to process everytime I want to get the stock value 
     manufacturer_list = []
+    manu_failure = ['testcase']
     for manufacturer in manufacturer_names:
-        url = 'https://bad-api-assignment.reaktor.com/v2/products/' + manufacturer
+        url = 'https://bad-api-assignment.reaktor.com/v2/availability/' + manufacturer
         # this sometimes runs into the "intentional failure case", so have to separate the requests from json.loads so can check for that failure. But if it happens, what should I do?
         # - just ignore the whole case?
         # - add the name of the manufacturer to a list that failed and process it later? global, background check/task for them?
         # - - I would then need to request it in X intervals to find out if it's working again, and if it is. I would then need to get the list of it's products and go through the products of that manufacturer to update their availability. Once that would be done would still need to refresh the page on client side
         m = requests.get(url)
         if len(m.text) != 0:
-            manufacturer_list.extend(json.loads(m.text))
-      
+            manufacturer_list.extend(json.loads(m.text)['response'])
+        else:
+            manu_failure.extend(manufacturer)
+    
     #clean up old database
     db.drop_all()
     
@@ -51,7 +54,7 @@ def init_db(Product):
 
     # fill the database with products 
     for product in products:
-        instock = get_stock(product['id'], manufacturer_list)
+        instock = get_stock(product['id'], manufacturer_list, manu_failure)
         #instock = #find the stock availability by checking manufacturers
         p = Product(id=product['id'], category=product['type'], name=product['name'], manufacturer=product['manufacturer'], stock=instock, price=product['price'])
         db.session.add(p)
@@ -62,12 +65,16 @@ def update_db():
     # need to make sure the current database is still "fresh" or if 5 minutes has passed and it needs to be updated
     pass
     
-def get_stock(id, manufacturers):
-    for manufacturer in manufacturers:
-        if id == manufacturer['id']:
-            #stock = Manufacturer.query.filter_by(id=self.id).first()
-            stock = html_parse(manufacturer['DATAPAYLOAD'])
-            return stock
+def get_stock(product_id, manufacturer_list, manu_failure):
+    #print(len(manufacturer_list))
+    for manufacturer in manufacturer_list:
+        if manufacturer not in manu_failure:
+            if product_id == manufacturer['id'].lower():
+                #stock = Manufacturer.query.filter_by(id=self.id).first()
+                stock = html_parse(manufacturer['DATAPAYLOAD'])
+                return stock
+        else:
+            return 'Unknown Failure'
     return 'Unknown'
     
 def html_parse(line):

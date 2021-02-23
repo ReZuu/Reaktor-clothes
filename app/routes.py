@@ -8,11 +8,12 @@ from app.build_database import init_db
 @app.before_request
 def before_request():
     #check if the Product database exits/has anything, if not initiate it with build_database init_db()
-    #g.category = 'Gloves'
     products = Product.query.all()
     if len(products) == 0:
         init_db(Product)
-    #otherwise check for creation/update time and update the database
+    #have to also check for creation time and based on that re-create it or update it. 
+    #for now just re-create always
+    #init_db(Product)
     pass
 
 #trying a one page solution for now, instead of having separate pages for all three categories
