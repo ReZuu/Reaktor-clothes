@@ -15,13 +15,13 @@
 			<div class="collapse navbar-collapse" id="navbarNav">
 				<ul class="nav navbar-nav">
 					<li class="nav-item">
-						<a class="nav-link" aria-current="page" href="{{ url_for('index') }}">{{ 'Gloves' }}</a>
+						<a class="nav-link" aria-current="page" href="{{ url_for('switch_category', category='Gloves') }}">{{ 'Gloves' }}</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link" href="{{ url_for('index') }}">{{ 'Facemasks' }}</a>
+						<a class="nav-link" href="{{ url_for('switch_category', category='Facemasks') }}">{{ 'Facemasks' }}</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link" href="{{ url_for('index') }}">{{ 'Beanies' }}</a>
+						<a class="nav-link" href="{{ url_for('switch_category', category='Beanies') }}">{{ 'Beanies' }}</a>
 					</li>
 				</ul>
 			</div>

@@ -14,10 +14,7 @@ class Product(db.Model):
     def __repr__(self):
         return "<Product (%r, %r, %r)>" % (self.name, self.manufacturer, self.stock)
     
-    #this might be unnecessary, depending on how I get the stock value or implement the manufacturers
-    def get_stock(self, manufacturer):
-        stock = Manufacturer.query.filter_by(id=self.id).first()
-        return stock.stock
+    
         
 class Manufacturer(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -28,7 +25,7 @@ class Manufacturer(db.Model):
     def __repr__(self):
         return "<Manufacturer (%r, %r, %r)>" % (self.name, self.product, self.stock)
         
-# is this necessary for tying the two tables together? Are the id/names flipped? Only if use the manufacturer model to begin with      
+# is this necessary for tying the two tables together? Are the id/names flipped? Only if I use the manufacturer model to begin with      
 # stocks = db.Table('stocks',
     # db.Column('product_id', db.Text, db.ForeignKey('product.id')),
     # db.Column('manufacturer_name', db.String, db.ForeignKey('manufacturer.name'))
