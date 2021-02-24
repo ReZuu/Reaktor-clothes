@@ -2,10 +2,15 @@ import os, requests, json
 from app import db
 from bs4 import BeautifulSoup
 
-def init_db(Product):
+def init_db(Product, job=None):
+    #Checking if job_id is None or not, in order to be able to update RQ job progress
+    #if job != None:
+        #try to fetch the job?
+
     #Get all the products from the API here. Once for each category
     #Categories: Gloves, Beanies, Facemasks
     #https://bad-api-assignment.reaktor.com/v2/products/<category>
+    print ('Fetching products')
     products = []
     r_gloves = requests.get('https://bad-api-assignment.reaktor.com/v2/products/gloves')
     if (r_gloves.status_code != 503):
@@ -29,6 +34,7 @@ def init_db(Product):
     # alt.pros: database queries might be faster
     
     #create a list of manufacturer names
+    print ('Getting a list of all the manufacturers')
     manufacturer_names = []
     for product in products:
         if len(manufacturer_names) != 0:
@@ -41,6 +47,7 @@ def init_db(Product):
     # - alternative could call the API with the manufacturer + product_id to just get a single result, OR make separate list for all manufacturers, so would be easier to process and find the stock value
     # alt.cons: if the list changes before the process is done for all products, it will cause issues
     # alt.pros: don't have a massive list to process everytime I want to get the stock value 
+    print ('Getting a list of all the manufacturers products')
     manufacturer_list = []
     manu_failure = ['testcase']
     item_count = 0
@@ -68,10 +75,12 @@ def init_db(Product):
         else:
             manu_failure.append(manufacturer)
     
+    print ('Failed to get these manufacturers: ')
     print (manu_failure)
-    print ('manu_list length: ')
-    print (len(manufacturer_list))
+    #print ('manu_list length: ')
+    #print (len(manufacturer_list))
     
+    print ('Cleaning and re-creating databases')
     #clean up old database
     db.drop_all()
     
@@ -79,12 +88,20 @@ def init_db(Product):
     db.create_all()
 
     # fill the database with products 
+    print ('Creating all the products')
+    count = 0
     for product in products:
         instock = get_stock(product['id'], manufacturer_list, manu_failure)
         #instock = #find the stock availability by checking manufacturers
         p = Product(id=product['id'], category=product['type'], name=product['name'], manufacturer=product['manufacturer'], stock=instock, price=product['price'])
         db.session.add(p)
+        count += 1
+        job.meta['progress'] = 100.0 * count / len(products)
+        print(job.meta['progress'])
         
+    job.meta['progress'] = 100
+    job.save_meta()
+    print ('Committing products to database')
     db.session.commit()
     
 def update_db():
@@ -95,7 +112,7 @@ def get_stock(product_id, manufacturer_list, manu_failure):
     #print(len(manufacturer_list))
     for manufacturer in manufacturer_list:
         if manufacturer not in manu_failure:
-            print('getting stock')
+            #print('getting stock')
             #print(manufacturer)
             if product_id == manufacturer['id'].lower():
                 #stock = Manufacturer.query.filter_by(id=self.id).first()

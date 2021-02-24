@@ -35,7 +35,6 @@ class Manufacturer(db.Model):
 class Task(db.Model):
     id = db.Column(db.String(36), primary_key=True)
     name = db.Column(db.String(128), index=True)
-    description = db.Column(db.String(128))
     complete = db.Column(db.Boolean, default=False)
     
     def get_rq_job(self):

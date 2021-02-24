@@ -6,28 +6,16 @@ from app.main import bp
 
 
 #for checking how long it was been since last visit/build, if more than 5 minutes. Would call database to update itself. Would need to store last visit time. Some kind of a timer might be simpler/better, especially if you don't know the exact refresh time? Otherwise would have to ping it more often to see if it has changed.
-@bp.before_request
-def before_request():
-    #check if the Product database exits/has anything, if not initiate it with build_database init_db(). 
-    #Need to start this is a background task for it to work on deploy
-    products = Product.query.all()
-    if len(products) == 0:
-        #init_db(Product)
-        #job = current_app.task_queue.enqueue(func=init_db(Product))
-        job = current_app.task_queue.enqueue('app.tasks.create_db')
-    #have to also check for creation time and based on that re-create it or update it. 
+@bp.before_app_first_request
+def before_app_first_request():
+    #Would ideally check for creation time and based on that re-create it or update it. 
     #with rq jobs can actually schedule them to run at intervals
     
-    #using this temporarely for forcing the re-creation of the databases
     #init_db(Product)
     #job = current_app.task_queue.enqueue(init_db(Product))
     #job = current_app.task_queue.enqueue('app.tasks.example', 23)
-    # if session['job'] is None:
-        # session['job'] = 0
-    job = current_app.task_queue.enqueue('app.tasks.create_db')
-    #session['job'] = job.get_id()
-    
-    pass
+    rq_job = current_app.task_queue.enqueue('app.tasks.create_db')
+
 
 #trying a one page solution for now, instead of having separate pages for all three categories
 #could just as well make three different versions of the same page for different categories, but extra work for no reason?
