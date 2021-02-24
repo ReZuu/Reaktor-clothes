@@ -40,5 +40,5 @@ def index():
 @bp.route('/switch_category/<string:category>')
 def switch_category(category):
     session['category'] = category
-    return redirect(url_for('index'))
+    return redirect(url_for('main.index'))
 
