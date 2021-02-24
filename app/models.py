@@ -1,5 +1,4 @@
 from app import db
-from app.build_database import init_db
 import redis
 import rq
 
@@ -16,21 +15,14 @@ class Product(db.Model):
     def __repr__(self):
         return "<Product (%r, %r, %r)>" % (self.name, self.manufacturer, self.stock)
     
-        
+#repurposed for keeping tracked of failed manufacturers 
 class Manufacturer(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
-    product_id = db.Column(db.Text, db.ForeignKey('product.id'))
-    stock = db.Column(db.String)
     
     def __repr__(self):
-        return "<Manufacturer (%r, %r, %r)>" % (self.name, self.product, self.stock)
-        
-# is this necessary for tying the two tables together? Are the id/names flipped? Only if I use the manufacturer model to begin with      
-# stocks = db.Table('stocks',
-    # db.Column('product_id', db.Text, db.ForeignKey('product.id')),
-    # db.Column('manufacturer_name', db.String, db.ForeignKey('manufacturer.name'))
-# )
+        return "<Manufacturer (%r)>" % (self.name)
+
 
 class Task(db.Model):
     id = db.Column(db.String(36), primary_key=True)

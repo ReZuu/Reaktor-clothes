@@ -1,9 +1,8 @@
-from flask import render_template, jsonify, request, redirect, session, url_for, current_app
+from flask import render_template, jsonify, request, redirect, session, url_for, current_app, g
 from app import db
 from app.models import Product, get_tasks_in_progress
-from app.build_database import init_db, empty_db
+from app.build_database import init_db
 from app.main import bp
-
 
 #for checking how long it was been since last visit/build, if more than 5 minutes. Would call database to update itself. Would need to store last visit time. Some kind of a timer might be simpler/better, especially if you don't know the exact refresh time? Otherwise would have to ping it more often to see if it has changed.
 @bp.before_app_first_request
@@ -11,6 +10,7 @@ def before_app_first_request():
     #Would ideally check for creation time and based on that re-create it or update it. 
     #with rq jobs can actually schedule them to run at intervals
     
+
     #init_db(Product)
     #job = current_app.task_queue.enqueue(init_db(Product))
     #job = current_app.task_queue.enqueue('app.tasks.example', 23)
@@ -27,6 +27,7 @@ def index():
     else:
         category = 'Gloves'
 
+    #category = g.category # doesn't seem to work
 
     #make sure the product database is populated and then pass it on to the render_template with the selected category
     products = Product.query.filter_by(category=category.lower()).all()
@@ -37,5 +38,6 @@ def index():
 @bp.route('/switch_category/<string:category>')
 def switch_category(category):
     session['category'] = category
+    g.category = category
     return redirect(url_for('main.index'))
 

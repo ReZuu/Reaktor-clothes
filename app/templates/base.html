@@ -16,7 +16,7 @@
 				<span class="navbar-brand"><b>Reaktor Warehouse</b></span>
 			{% endif %}
 			
-			<!-- Buttons -->
+			<!-- Category tabs -->
 			<ul class="nav nav-tabs">
 				<li role="presentation" {% if category == 'Gloves' %} class="active"{% endif %}><a href="{{ url_for('main.switch_category', category='Gloves') }}">Gloves</a></li>
 				<li role="presentation" {% if category == 'Facemasks' %} class="active"{% endif %}><a href="{{ url_for('main.switch_category', category='Facemasks') }}">Facemasks</a></li>

@@ -1,8 +1,17 @@
 import os, requests, json
 from app import db
+from app.models import Manufacturer, Product
 from bs4 import BeautifulSoup
+from flask import g
 
-def init_db(Product, job=None):
+def init_db(job=None):
+    print ('Cleaning and re-creating databases')
+    #clean up old database
+    db.drop_all()
+    
+    #create a new fresh database
+    db.create_all()
+    
     #Checking if job_id is None or not, in order to be able to update RQ job progress
     #if job != None:
         #try to fetch the job?
@@ -48,74 +57,70 @@ def init_db(Product, job=None):
     # alt.cons: if the list changes before the process is done for all products, it will cause issues
     # alt.pros: don't have a massive list to process everytime I want to get the stock value 
     print ('Getting a list of all the manufacturers products')
-    manufacturer_list = []
-    manu_failure = ['testcase']
-    item_count = 0
-    for manufacturer in manufacturer_names:
-        url = 'https://bad-api-assignment.reaktor.com/v2/availability/' + manufacturer
-        # this sometimes runs into the "intentional failure case", so have to separate the requests from json.loads so can check for that failure. But if it happens, what should I do?
-        # - just ignore the whole case?
-        # - add the name of the manufacturer to a list that failed and process it later? global, background check/task for them?
-        # - - I would then need to request it in X intervals to find out if it's working again, and if it is. I would then need to get the list of it's products and go through the products of that manufacturer to update their availability. Once that would be done would still need to refresh the page on client side
-        
-        # for testing the fail case - should return 'uknown' as stock value when unable to get the manufacturers API info
-        # headers = {'x-force-error-mode': 'all'}
-        # if manufacturer == 'okkau':
-            # m = requests.get(url, headers=headers)
-        # else:
-            # m = requests.get(url)
-            
-        m = requests.get(url)
-        m_json = json.loads(m.text)
-        
-        #if len(m.text) != 0:
-        if m_json['response'] != '[]':
-            manufacturer_list.extend(m_json['response'])
-            item_count += len(m_json['response'])
-        else:
-            manu_failure.append(manufacturer)
+    manufacturer_list = get_manufacturers_products(manufacturer_names)
     
     print ('Failed to get these manufacturers: ')
-    print (manu_failure)
-    #print ('manu_list length: ')
-    #print (len(manufacturer_list))
-    
-    print ('Cleaning and re-creating databases')
-    #clean up old database
-    db.drop_all()
-    
-    #create a new fresh database
-    db.create_all()
+    print (Manufacturer.query.all())
+    #create a new background task for getting the stock value from these, with a short delay
 
     # fill the database with products 
     print ('Creating all the products')
+    create_product(products, manufacturer_list, job)
+    
+def fill_stock(Product, job):
+    # fill the missing stock values for products
+    products = Product.query.filter_by(stock='Unknown').all()
+    
+    #manu_names = get_manufacturers(products)
+    #get the manufacturer names from database
+    manu_names = Manufacturer.query.all()
+    manu_list = get_manufacturers_products(manu_names)
+    
+    create_product(products, manu_list, job)
+    
+    #check if there are still failed manufacturers in the table and requeue a new job for it, with a delay
+  
+def get_manufacturers_products(names):
+    manu_list = []
+    for name in names:
+        print('Getting products from {}.'.format(name))
+        url = 'https://bad-api-assignment.reaktor.com/v2/availability/' + name
+        m = requests.get(url)
+        m_json = json.loads(m.text)
+        m_query = Manufacturer.query.filter_by(name = name).first()
+        
+        if m_json['response'] != '[]':
+            manu_list.extend(m_json['response'])
+            if m_query != None:
+                db.session.delete(m_query)
+        elif m_query == None :
+            m_fail = Manufacturer(name=name)
+            db.session.add(m_fail)
+    return manu_list
+    
+def create_product(products, manu_list, job):
     count = 0
     for product in products:
-        instock = get_stock(product['id'], manufacturer_list, manu_failure)
-        #instock = #find the stock availability by checking manufacturers
+        instock = get_stock(product['id'], manu_list)
         p = Product(id=product['id'], category=product['type'], name=product['name'], manufacturer=product['manufacturer'], stock=instock, price=product['price'])
         db.session.add(p)
         count += 1
         job.meta['progress'] = 100.0 * count / len(products)
         print(job.meta['progress'])
-        
+    
     job.meta['progress'] = 100
     job.save_meta()
     print ('Committing products to database')
     db.session.commit()
-    
-def update_db():
-    # need to make sure the current database is still "fresh" or if 5 minutes has passed and it needs to be updated
-    pass
-    
-def get_stock(product_id, manufacturer_list, manu_failure):
+  
+def get_stock(product_id, manufacturer_list):
     #print(len(manufacturer_list))
+    manu_fail = Manufacturer.query.all()
     for manufacturer in manufacturer_list:
-        if manufacturer not in manu_failure:
+        if manufacturer not in manu_fail:
             #print('getting stock')
             #print(manufacturer)
             if product_id == manufacturer['id'].lower():
-                #stock = Manufacturer.query.filter_by(id=self.id).first()
                 stock = html_parse(manufacturer['DATAPAYLOAD'])
                 return stock
         else:
@@ -126,7 +131,3 @@ def html_parse(line):
     soup = BeautifulSoup(line, 'html.parser')
     tag = soup.instockvalue
     return tag.string
-    
-def empty_db():
-    db.session.drop_all()
-    db.session.commit()
