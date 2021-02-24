@@ -20,7 +20,7 @@ def init_db(Product):
         facemasks = json.loads(r_facemasks.text)
         products += facemasks
     #would flasks request.get_json() be better for these or does it even matter?
-    #change these to basic request.get so can handle exceptions from them with status_code's?
+    #would try-except be better here or not?
     
     #From products create a list of all the manufacturers, so we know what they are.
     #Now that list can be cross-checked for stock availability when making the Product model 
@@ -68,9 +68,9 @@ def init_db(Product):
         else:
             manu_failure.append(manufacturer)
     
-    # print (manu_failure)
-    # print ('manu_list length: ')
-    # print (len(manufacturer_list))
+    print (manu_failure)
+    print ('manu_list length: ')
+    print (len(manufacturer_list))
     
     #clean up old database
     db.drop_all()
@@ -95,7 +95,7 @@ def get_stock(product_id, manufacturer_list, manu_failure):
     #print(len(manufacturer_list))
     for manufacturer in manufacturer_list:
         if manufacturer not in manu_failure:
-            #print('getting stock')
+            print('getting stock')
             #print(manufacturer)
             if product_id == manufacturer['id'].lower():
                 #stock = Manufacturer.query.filter_by(id=self.id).first()
@@ -109,3 +109,7 @@ def html_parse(line):
     soup = BeautifulSoup(line, 'html.parser')
     tag = soup.instockvalue
     return tag.string
+    
+def empty_db():
+    db.session.drop_all()
+    db.session.commit()

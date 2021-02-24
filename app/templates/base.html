@@ -28,6 +28,15 @@
 
 {% block content %}
 	<div class="container-fluid">
+		<!-- Get tasks -->
+		{% if tasks %}
+			{% for task in tasks %}
+				<div class="alert alert-success" role="alert">
+					{{ task.description }}
+					<span id="{{ task.id }}-progress">{{ task.get_progress()}}</span>%
+				</div>
+			{% endfor %}
+		{% endif %}
 		{% block app_content %}{% endblock %}
 	</div>
 {% endblock %}

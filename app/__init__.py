@@ -6,7 +6,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from config import Config
 from logging.handlers import RotatingFileHandler
-#from redis import Redis
+from redis import Redis
+import rq
 
 
 db = SQLAlchemy()
@@ -20,7 +21,8 @@ def create_app(config_class=Config):
     db.init_app(app)
     migrate.init_app(app, db)
     bootstrap.init_app(app)
-    #app.redis = Redis.from_url(app.config['REDIS_URL'])
+    app.redis = Redis.from_url(app.config['REDIS_URL'])
+    app.task_queue = rq.Queue('warehouse-tasks', connection=app.redis)
 
     from app.errors import bp as errors_bp
     app.register_blueprint(errors_bp)
