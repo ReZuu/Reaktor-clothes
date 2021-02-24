@@ -18,9 +18,9 @@
 			
 			<!-- Buttons -->
 			<ul class="nav nav-tabs">
-				<li role="presentation" {% if category == 'Gloves' %} class="active"{% endif %}><a href="{{ url_for('switch_category', category='Gloves') }}">Gloves</a></li>
-				<li role="presentation" {% if category == 'Facemasks' %} class="active"{% endif %}><a href="{{ url_for('switch_category', category='Facemasks') }}">Facemasks</a></li>
-				<li role="presentation" {% if category == 'Beanies' %} class="active"{% endif %}><a href="{{ url_for('switch_category', category='Beanies') }}">Beanies</a></li>
+				<li role="presentation" {% if category == 'Gloves' %} class="active"{% endif %}><a href="{{ url_for('main.switch_category', category='Gloves') }}">Gloves</a></li>
+				<li role="presentation" {% if category == 'Facemasks' %} class="active"{% endif %}><a href="{{ url_for('main.switch_category', category='Facemasks') }}">Facemasks</a></li>
+				<li role="presentation" {% if category == 'Beanies' %} class="active"{% endif %}><a href="{{ url_for('main.switch_category', category='Beanies') }}">Beanies</a></li>
 			</ul>
 		</div>
 	</nav>
@@ -28,6 +28,6 @@
 
 {% block content %}
 	<div class="container-fluid">
-		{% block product_content %}{% endblock %}
+		{% block app_content %}{% endblock %}
 	</div>
 {% endblock %}

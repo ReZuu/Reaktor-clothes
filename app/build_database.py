@@ -6,10 +6,19 @@ def init_db(Product):
     #Get all the products from the API here. Once for each category
     #Categories: Gloves, Beanies, Facemasks
     #https://bad-api-assignment.reaktor.com/v2/products/<category>
-    gloves = json.loads(requests.get('https://bad-api-assignment.reaktor.com/v2/products/gloves').text)
-    beanies = json.loads(requests.get('https://bad-api-assignment.reaktor.com/v2/products/beanies').text)
-    facemasks = json.loads(requests.get('https://bad-api-assignment.reaktor.com/v2/products/facemasks').text)
-    products = gloves + beanies + facemasks 
+    products = []
+    r_gloves = requests.get('https://bad-api-assignment.reaktor.com/v2/products/gloves')
+    if (r_gloves.status_code != 503):
+        gloves = json.loads(r_gloves.text)
+        products += gloves
+    r_beanies = requests.get('https://bad-api-assignment.reaktor.com/v2/products/beanies')
+    if (r_beanies.status_code != 503):
+        beanies = json.loads(r_beanies.text)
+        products += beanies
+    r_facemasks = requests.get('https://bad-api-assignment.reaktor.com/v2/products/facemasks')
+    if (r_facemasks.status_code != 503):
+        facemasks = json.loads(r_facemasks.text)
+        products += facemasks
     #would flasks request.get_json() be better for these or does it even matter?
     #change these to basic request.get so can handle exceptions from them with status_code's?
     
@@ -34,17 +43,34 @@ def init_db(Product):
     # alt.pros: don't have a massive list to process everytime I want to get the stock value 
     manufacturer_list = []
     manu_failure = ['testcase']
+    item_count = 0
     for manufacturer in manufacturer_names:
         url = 'https://bad-api-assignment.reaktor.com/v2/availability/' + manufacturer
         # this sometimes runs into the "intentional failure case", so have to separate the requests from json.loads so can check for that failure. But if it happens, what should I do?
         # - just ignore the whole case?
         # - add the name of the manufacturer to a list that failed and process it later? global, background check/task for them?
         # - - I would then need to request it in X intervals to find out if it's working again, and if it is. I would then need to get the list of it's products and go through the products of that manufacturer to update their availability. Once that would be done would still need to refresh the page on client side
+        
+        # for testing the fail case - should return 'uknown' as stock value when unable to get the manufacturers API info
+        # headers = {'x-force-error-mode': 'all'}
+        # if manufacturer == 'okkau':
+            # m = requests.get(url, headers=headers)
+        # else:
+            # m = requests.get(url)
+            
         m = requests.get(url)
-        if len(m.text) != 0:
-            manufacturer_list.extend(json.loads(m.text)['response'])
+        m_json = json.loads(m.text)
+        
+        #if len(m.text) != 0:
+        if m_json['response'] != '[]':
+            manufacturer_list.extend(m_json['response'])
+            item_count += len(m_json['response'])
         else:
-            manu_failure.extend(manufacturer)
+            manu_failure.append(manufacturer)
+    
+    # print (manu_failure)
+    # print ('manu_list length: ')
+    # print (len(manufacturer_list))
     
     #clean up old database
     db.drop_all()
@@ -69,6 +95,8 @@ def get_stock(product_id, manufacturer_list, manu_failure):
     #print(len(manufacturer_list))
     for manufacturer in manufacturer_list:
         if manufacturer not in manu_failure:
+            #print('getting stock')
+            #print(manufacturer)
             if product_id == manufacturer['id'].lower():
                 #stock = Manufacturer.query.filter_by(id=self.id).first()
                 stock = html_parse(manufacturer['DATAPAYLOAD'])
