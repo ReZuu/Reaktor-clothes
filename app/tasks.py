@@ -1,7 +1,7 @@
 import time, sys, requests, json
 from rq import get_current_job
 from app import create_app, db
-from app.models import Task, Product
+from app.models import Task, Product, Caches, Manufacturer
 from app.build_database import init_db, fill_stock
 from flask import g
 
@@ -12,34 +12,64 @@ def create_db():
     try:
         job = get_current_job()
         print('Creating databases')
-        task = Task(id=job.get_id(), name='Create db')
+        task = Task(id=job.get_id(), name='Create db', description='Creating product databases - progress: ')
         db.session.add(task)
         init_db(job)
         
     except:
         print('Unhandled exception on creating db')
-        g.isDbCreating = False
         app.logger.error('Unhandled exception', exc_info=sys.exc_info())
     finally:
         print('Finished creating databases')
-        g.isDbCreating = False
         _set_task_progress(100)
     
 def update_db():
     try:
-        g.isDbUpdating = True
         job = get_current_job()
         print('Updating databases')
-        task = Task(id=job.get_id(), name='Updating db')
+        task = Task(id=job.get_id(), name='Updating db', description='Updating product databases - progres: ')
         db.session.add(task)
         fill_stock(job)
     except:
         print('Unhandled exception on update db')
-        g.isDbUpdating = False
         app.logger.error('Unhandled exception', exc_info=sys.exc_info())
     finally:  
         print('Finished updating databases')
-        g.isDbUpdating = False
+        _set_task_progress(100)
+        
+def check_caches():
+    job = get_current_job()
+    try:
+        #get headers Etag to check for cache version
+        r_gloves = requests.get('https://bad-api-assignment.reaktor.com/v2/products/gloves')
+        gloves_query = Caches.query.filter_by(name='Gloves').first()
+        if r_gloves.headers['Etag'] != gloves_query['id']:
+            #it needs to be updated
+            pass
+            
+        r_beanies = requests.get('https://bad-api-assignment.reaktor.com/v2/products/beanies')
+        beanies_query = Caches.query.filter_by(name='Beanies').first()
+        if r_beanies.headers['Etag'] != beanies_query['id']:
+            #it needs to be updated
+            pass
+            
+        r_facemasks = requests.get('https://bad-api-assignment.reaktor.com/v2/products/facemasks')
+        facemasks_query = Caches.query.filter_by(name='Facemasks').first()
+        if r_facemasks.headers['Etag'] != facemasks_query['id']:
+            #it needs to be updated
+            pass
+            
+        manu_names = Manufacturer.query.all()
+        for name in manu_names:
+            url = 'https://bad-api-assignment.reaktor.com/v2/availability/' + name
+            m_request = requests.get(url)
+            cache_query = Caches.query.filter_by(name=name).first()
+            if m_request.headers['Etag'] != cache_query['id']:
+                #it needs to be updated
+                pass
+    except:
+        print('Unhandled exception on checking caches')
+    finally:
         _set_task_progress(100)
 
 def _set_task_progress(progress):

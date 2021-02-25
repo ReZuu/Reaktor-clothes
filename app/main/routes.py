@@ -4,17 +4,15 @@ from app.models import Product, get_tasks_in_progress
 from app.build_database import init_db
 from app.main import bp
 
-#for checking how long it was been since last visit/build, if more than 5 minutes. Would call database to update itself. Would need to store last visit time. Some kind of a timer might be simpler/better, especially if you don't know the exact refresh time? Otherwise would have to ping it more often to see if it has changed.
+
 @bp.before_app_first_request
 def before_app_first_request():
-    #Would ideally check for creation time and based on that re-create it or update it. 
-    #with rq jobs can actually schedule them to run at intervals
+    #should maybe check if there are some previous tasks in queue in RQ, as on local that seems to be a possibility. And flush them out. 
     
 
-    #init_db(Product)
-    #job = current_app.task_queue.enqueue(init_db(Product))
     #job = current_app.task_queue.enqueue('app.tasks.example', 23)
-    rq_job = current_app.task_queue.enqueue('app.tasks.create_db')
+    #rq_job = current_app.task_queue.enqueue('app.tasks.create_db')
+    pass
 
 
 #trying a one page solution for now, instead of having separate pages for all three categories

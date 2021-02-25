@@ -7,7 +7,12 @@
 {% endblock %}
 
 {% block navbar %}
-	<nav class="navbar navbar-expand-sm bg-dark navbar-dark fixed-top">
+	<style>
+		.bg-white {
+			background-color: #fff;
+		}
+	</style>
+	<nav class="navbar navbar-expand-sm bg-white navbar-dark navbar-fixed-top">
 		<div class="container-fluid">
 			<!-- Brand -->
 			{% if title %}
@@ -28,7 +33,6 @@
 
 {% block content %}
 	<div class="container-fluid">
-		<!-- Get tasks -->
 		{% if tasks %}
 			{% for task in tasks %}
 				<div class="alert alert-success" role="alert">
@@ -39,4 +43,12 @@
 		{% endif %}
 		{% block app_content %}{% endblock %}
 	</div>
+{% endblock %}
+
+{% block scripts %}
+	<script>
+		function set_task_progress(task_id, progress) {
+			$('#' + task_id + '-progress').text(progress);
+		}
+	</script>
 {% endblock %}

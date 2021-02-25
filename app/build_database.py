@@ -1,20 +1,16 @@
 import os, requests, json
 from app import db
-from app.models import Manufacturer, Product
+from app.models import Manufacturer, Product, Caches
 from bs4 import BeautifulSoup
 from flask import g
 
-def init_db(job=None):
+def init_db(job):
     print ('Cleaning and re-creating databases')
     #clean up old database
     db.drop_all()
     
     #create a new fresh database
     db.create_all()
-    
-    #Checking if job_id is None or not, in order to be able to update RQ job progress
-    #if job != None:
-        #try to fetch the job?
 
     #Get all the products from the API here. Once for each category
     #Categories: Gloves, Beanies, Facemasks
@@ -25,14 +21,22 @@ def init_db(job=None):
     if (r_gloves.status_code != 503):
         gloves = json.loads(r_gloves.text)
         products += gloves
+    gloves_etag = Caches(id=r_gloves.headers['Etag'], name='Gloves')
+    db.session.add(gloves_etag)
+    
     r_beanies = requests.get('https://bad-api-assignment.reaktor.com/v2/products/beanies')
     if (r_beanies.status_code != 503):
         beanies = json.loads(r_beanies.text)
         products += beanies
+    beanies_etag = Caches(id=r_beanies.headers['Etag'], name='Beanies')
+    db.session.add(beanies_etag)
+        
     r_facemasks = requests.get('https://bad-api-assignment.reaktor.com/v2/products/facemasks')
     if (r_facemasks.status_code != 503):
         facemasks = json.loads(r_facemasks.text)
         products += facemasks
+    facemasks_etag = Caches(id=r_facemasks.headers['Etag'], name='Facemasks')
+    db.session.add(facemasks_etag)
     #would flasks request.get_json() be better for these or does it even matter?
     #would try-except be better here or not?
     
@@ -90,6 +94,8 @@ def get_manufacturers_products(names):
         m_query = Manufacturer.query.filter_by(name = name).first()
         
         if m_json['response'] != '[]':
+            m_etag = Caches(id=m.headers['Etag'], name=name)
+            db.session.add(m_etag)
             manu_list.extend(m_json['response'])
             if m_query != None:
                 db.session.delete(m_query)

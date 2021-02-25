@@ -1,7 +1,22 @@
 {% extends "base.html" %}
 
 {% block app_content %}
-	<table class="table table-bordered table-hover">
+	<style>
+		body {
+			padding-top: 50px;
+		}
+		table.floatThead-table {
+			border-top: none;
+			border-bottom: none;
+			background-color: #fff;
+		}
+		th {
+			position: sticky;
+			top: 50px;
+			background: white;
+		}
+	</style>
+	<table class="table table-bordered table-hover sticky-header">
 		<thead class="thead-light">
 			<tr>
 				<th>Product - {{ category }}</th>
@@ -17,4 +32,12 @@
 		{% endfor %}
 		</tbody>
 	</table>
+{% endblock %}
+
+{% block scripts %}
+	<script>
+		$(document).ready(function(){
+			$(".sticky-header").floatThead({top:50});
+		});
+	</script>
 {% endblock %}
