@@ -1,4 +1,5 @@
 from app import db
+from flask import current_app
 import redis
 import rq
 
@@ -40,12 +41,6 @@ class Task(db.Model):
     def get_progress(self):
         job = self.get_rq_job()
         return job.meta.get('progress', 0) if job is not None else 100
-        
-def get_tasks_in_progress():
-    return Task.query.filter_by(complete=False).all()
-    
-def get_task_in_progress(name):
-    return Task.query.filter_by(name=name, complete=False).first()
     
 #table class to keep track of Etag's from the API 
 class Caches(db.Model):

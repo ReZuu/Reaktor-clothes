@@ -5,12 +5,9 @@ from bs4 import BeautifulSoup
 from flask import g
 
 def init_db(job):
-    print ('Cleaning and re-creating databases')
-    #clean up old database
-    db.drop_all()
-    
-    #create a new fresh database
-    db.create_all()
+
+    #could fairly easily expand/lighten this process to multiple workers.
+    #one for each manufactrer or category, but don't think heroku free limits would allow that.
 
     #Get all the products from the API here. Once for each category
     #Categories: Gloves, Beanies, Facemasks

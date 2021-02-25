@@ -13,33 +13,50 @@ def create_db():
         job = get_current_job()
         print('Creating databases')
         task = Task(id=job.get_id(), name='Create db', description='Creating product databases - progress: ')
+        _set_task_progress(0)
+        
+        print ('Cleaning and re-creating databases')
+        #clean up old database
+        db.drop_all()
+        
+        #create a new fresh database
+        db.create_all()
+        
         db.session.add(task)
+        db.session.commit()
         init_db(job)
         
     except:
         print('Unhandled exception on creating db')
         app.logger.error('Unhandled exception', exc_info=sys.exc_info())
+        _set_task_progress(100)
     finally:
         print('Finished creating databases')
         _set_task_progress(100)
+        #at this point would want to trigger an event that would cause ajax to reload the page
     
 def update_db():
     try:
         job = get_current_job()
         print('Updating databases')
-        task = Task(id=job.get_id(), name='Updating db', description='Updating product databases - progres: ')
+        task = Task(id=job.get_id(), name='Updating db', description='Updating product databases - progress: ')
+        _set_task_progress(0)
+        
         db.session.add(task)
         fill_stock(job)
     except:
         print('Unhandled exception on update db')
         app.logger.error('Unhandled exception', exc_info=sys.exc_info())
+        _set_task_progress(100)
     finally:  
         print('Finished updating databases')
         _set_task_progress(100)
+        #at this point would provide the user with an option to refresh the page, instead of forcing the reload
         
 def check_caches():
-    job = get_current_job()
     try:
+        job = get_current_job()
+        _set_task_progress(0)
         #get headers Etag to check for cache version
         r_gloves = requests.get('https://bad-api-assignment.reaktor.com/v2/products/gloves')
         gloves_query = Caches.query.filter_by(name='Gloves').first()
@@ -69,6 +86,7 @@ def check_caches():
                 pass
     except:
         print('Unhandled exception on checking caches')
+        _set_task_progress(100)
     finally:
         _set_task_progress(100)
 
