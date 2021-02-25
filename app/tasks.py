@@ -12,7 +12,8 @@ def create_db():
     try:
         job = get_current_job()
         print('Creating databases')
-        task = Task(id=job.get_id(), name='Create db', description='Creating product databases - progress: ')
+        print('Job id: {}'.format(job.id))
+        task = Task(id=job.get_id(), name='Create db', description='Creating product databases - progress: ', complete=False)
         _set_task_progress(0)
         
         print ('Cleaning and re-creating databases')
@@ -39,7 +40,7 @@ def update_db():
     try:
         job = get_current_job()
         print('Updating databases')
-        task = Task(id=job.get_id(), name='Updating db', description='Updating product databases - progress: ')
+        task = Task(id=job.get_id(), name='Updating db', description='Updating product databases - progress: ', complete=False)
         _set_task_progress(0)
         
         db.session.add(task)

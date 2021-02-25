@@ -31,6 +31,9 @@ class Task(db.Model):
     complete = db.Column(db.Boolean, default=False)
     description = db.Column(db.String(128))
     
+    def __repr__(self):
+        return "<Task id is: (%r), complete: (%r))>" % (self.id, self.complete)
+    
     def get_rq_job(self):
         try:
             rq_job = rq.job.Job.fetch(self.id, connection=current_app.redis)
@@ -40,7 +43,10 @@ class Task(db.Model):
         
     def get_progress(self):
         job = self.get_rq_job()
+        print ('job id in progress: {}, progress: {}'.format(job.get_id(), job.meta['progress']))
         return job.meta.get('progress', 0) if job is not None else 100
+        
+    
     
 #table class to keep track of Etag's from the API 
 class Caches(db.Model):

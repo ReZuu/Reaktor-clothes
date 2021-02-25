@@ -3,13 +3,14 @@ from app import db
 from app.models import Product, Task
 from app.build_database import init_db
 from app.main import bp
+from rq import get_current_job
+from rq.job import Job
 
 
 @bp.before_app_first_request
 def before_app_first_request():
     #should maybe check if there are some previous tasks in queue in RQ, as on local that seems to be a possibility. And flush them out. 
     
-
     #job = current_app.task_queue.enqueue('app.tasks.example', 23)
     rq_job = current_app.task_queue.enqueue('app.tasks.create_db')
 
@@ -24,13 +25,20 @@ def index():
     else:
         category = 'Gloves'
 
-    #category = g.category # doesn't seem to work
+    # try to get products table, it might be locked in certain points
+    try:
+        products = Product.query.filter_by(category=category.lower()).all()
+    except:
+        product = []
+    # try to get current task, it might be locked in certain points
+    try:
+        tasks = Task.query.filter_by(complete=False).first()
+    except:
+        tasks = []
 
-    
-    products = Product.query.filter_by(category=category.lower()).all()
-    tasks = Task.query.filter_by(complete=False).first()
     if tasks:
         print('task progress: {}'.format (tasks.get_progress()))
+        print('all tasks: {}'.format (Task.query.all()))
     
     return render_template('index.html', title='Reaktor Warehouse', category=category, products=products, tasks=tasks)
 

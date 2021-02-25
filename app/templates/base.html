@@ -45,15 +45,10 @@
 
 {% block scripts %}
 	<script>
-	$(function() {
-		setInterval(function() {
-			$.ajax('{{ url_for('main.progress', jobid=tasks.id) }}').done(
-				function(progress) {
-					set_task_progress(tasks.id, progress)
-				}
-			);
-		}, 10000);
-	});
+	$(function() 
+		var test = 50;
+		$.ajax(console.log(test))
+	);
 	
 	function set_task_progress(task_id, progress) {
 		$('#' + task_id + '-progress').html(data);

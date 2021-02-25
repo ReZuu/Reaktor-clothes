@@ -60,8 +60,7 @@ def init_db(job):
     print ('Getting a list of all the manufacturers products')
     manufacturer_list = get_manufacturers_products(manufacturer_names)
     
-    print ('Failed to get these manufacturers: ')
-    print (Manufacturer.query.all())
+    print ('Failed to get these manufacturers: {}'.format(Manufacturer.query.all()))
     #create a new background task for getting the stock value from these, with a short delay
 
     # fill the database with products 
@@ -109,6 +108,7 @@ def create_product(products, manu_list, job):
         db.session.add(p)
         count += 1
         job.meta['progress'] = 100.0 * count / len(products)
+        job.save_meta()
         print(job.meta['progress'])
     
     job.meta['progress'] = 100
