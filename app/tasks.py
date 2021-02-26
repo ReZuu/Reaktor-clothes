@@ -3,7 +3,8 @@ from rq import get_current_job
 from app import create_app, db
 from app.models import Task, Product, Caches, Manufacturer
 from app.build_database import init_db, fill_stock
-from flask import g
+from app.main.routes import update, caches
+from flask import g, current_app
 
 app = create_app()
 app.app_context().push()
@@ -35,15 +36,23 @@ def create_db():
         print('Finished creating databases')
         _set_task_progress(100)
         #at this point would want to trigger an event that would cause ajax to reload the page
+        manu_fails = Manufacturer.query.all()
+        if manu_fails:
+            print ('manu fails are: {}'.format(manu_fails))
+            update()
+        #schedule check_caches() at x intervals
+        caches()
     
 def update_db():
     try:
         job = get_current_job()
         print('Updating databases')
+        print('Current job: {}'.format(job.id))
         task = Task(id=job.get_id(), name='Updating db', description='Updating product databases - progress: ', complete=False)
         _set_task_progress(0)
         
         db.session.add(task)
+        db.session.commit()
         fill_stock(job)
     except:
         print('Unhandled exception on update db')
@@ -53,27 +62,31 @@ def update_db():
         print('Finished updating databases')
         _set_task_progress(100)
         #at this point would provide the user with an option to refresh the page, instead of forcing the reload
+        manu_fails = Manufacturer.query.all()
+        if manu_fails:
+            print ('manu fails are: {}'.format(manu_fails))
         
 def check_caches():
     try:
+        print ('Checking cache versions')
         job = get_current_job()
         _set_task_progress(0)
         #get headers Etag to check for cache version
         r_gloves = requests.get('https://bad-api-assignment.reaktor.com/v2/products/gloves')
         gloves_query = Caches.query.filter_by(name='Gloves').first()
-        if r_gloves.headers['Etag'] != gloves_query['id']:
+        if r_gloves.headers['Etag'] != gloves_query.id:
             #it needs to be updated
             pass
             
         r_beanies = requests.get('https://bad-api-assignment.reaktor.com/v2/products/beanies')
         beanies_query = Caches.query.filter_by(name='Beanies').first()
-        if r_beanies.headers['Etag'] != beanies_query['id']:
+        if r_beanies.headers['Etag'] != beanies_query.id:
             #it needs to be updated
             pass
             
         r_facemasks = requests.get('https://bad-api-assignment.reaktor.com/v2/products/facemasks')
         facemasks_query = Caches.query.filter_by(name='Facemasks').first()
-        if r_facemasks.headers['Etag'] != facemasks_query['id']:
+        if r_facemasks.headers['Etag'] != facemasks_query.id:
             #it needs to be updated
             pass
             
@@ -82,13 +95,15 @@ def check_caches():
             url = 'https://bad-api-assignment.reaktor.com/v2/availability/' + name
             m_request = requests.get(url)
             cache_query = Caches.query.filter_by(name=name).first()
-            if m_request.headers['Etag'] != cache_query['id']:
+            if m_request.headers['Etag'] != cache_query.id:
                 #it needs to be updated
                 pass
     except:
         print('Unhandled exception on checking caches')
         _set_task_progress(100)
     finally:
+        print('Finished checking caches')
+        print('result: {}'.format(job.result))
         _set_task_progress(100)
 
 def _set_task_progress(progress):

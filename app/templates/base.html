@@ -44,14 +44,24 @@
 {% endblock %}
 
 {% block scripts %}
+	{{ super() }}
 	<script>
-	$(function() 
-		var test = 50;
-		$.ajax(console.log(test))
-	);
-	
-	function set_task_progress(task_id, progress) {
-		$('#' + task_id + '-progress').html(data);
-	}
+		$(function(){
+			var test = 50;
+			$.ajax({
+				url: '{{ url_for('main.ajax') }}',
+				data: JSON.stringify(data),
+				type: 'POST',
+				success: function (response) {
+					console.log(response);
+				},
+				error: function (error) {
+					console.log("ERROR");
+					console.log(error);
+				},
+				dataType: "json",
+				contentType: 'application/json;charset=UTF-8',
+			});
+		});
 	</script>
 {% endblock %}

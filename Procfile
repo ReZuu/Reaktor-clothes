@@ -1,2 +1,2 @@
 web: flask db upgrade; gunicorn warehouse:app
-worker: rq worker -u $REDIS_URL warehouse-tasks
+worker: rq worker --with-scheduler -u $REDIS_URL warehouse-tasks

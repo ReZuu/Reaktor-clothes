@@ -5,6 +5,7 @@ from app.build_database import init_db
 from app.main import bp
 from rq import get_current_job
 from rq.job import Job
+from datetime import timedelta
 
 
 @bp.before_app_first_request
@@ -29,13 +30,19 @@ def index():
     try:
         products = Product.query.filter_by(category=category.lower()).all()
     except:
-        product = []
+        products = []
     # try to get current task, it might be locked in certain points
     try:
         tasks = Task.query.filter_by(complete=False).first()
     except:
         tasks = []
-
+        
+    try:
+        test = current_app.task_queue.fetch_job(tasks['id'])
+        print(test.id)
+    except:
+        pass
+        
     if tasks:
         print('task progress: {}'.format (tasks.get_progress()))
         print('all tasks: {}'.format (Task.query.all()))
@@ -81,3 +88,16 @@ def test():
         return jsonify({status: 'error: incorrect parameters'})
     val = 50
     return jsonify({status: 'success', data: val})
+    
+def update():
+    print('queueing an update job')
+    # don't want to do it immediately since, the API will probably take a moment to work correctly anyway
+    rq_job = current_app.task_queue.enqueue_in(timedelta(seconds=10), 'app.tasks.update_db')
+    
+def caches():
+    print('queueing a cache checking job')
+    #for testing using less time than should, but considering the 5 minute cache time. Every 2.5 (150 seconds) mins might be reasonable? or even slower.
+    #rq_job = current_app.task_queue.enqueue_in(timedelta(seconds=15), 'app.tasks.check_caches')
+    pass
+    #should first check if there is already a cache job queued, as not to spam them
+    

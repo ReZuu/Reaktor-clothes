@@ -67,16 +67,34 @@ def init_db(job):
     print ('Creating all the products')
     create_product(products, manufacturer_list, job)
     
-def fill_stock(Product, job):
+def fill_stock(job):
     # fill the missing stock values for products
     products = Product.query.filter_by(stock='Unknown').all()
     
     #manu_names = get_manufacturers(products)
     #get the manufacturer names from database
-    manu_names = Manufacturer.query.all()
+    manu_names = []
+    m_query = Manufacturer.query.all()
+    if m_query:
+        for item in m_query:
+            manu_names.append(item.name)
     manu_list = get_manufacturers_products(manu_names)
     
-    create_product(products, manu_list, job)
+    #create_product(products, manu_list, job)
+    
+    count = 0
+    for product in products:
+        instock = get_stock(product.id, manu_list)
+        product.stock = instock
+        count += 1
+        job.meta['progress'] = 100.0 * count / len(products)
+        job.save_meta()
+        print(job.meta['progress'])
+    
+    job.meta['progress'] = 100
+    job.save_meta()
+    print ('Committing products to database')
+    db.session.commit()
     
     #check if there are still failed manufacturers in the table and requeue a new job for it, with a delay
   
@@ -84,8 +102,15 @@ def get_manufacturers_products(names):
     manu_list = []
     for name in names:
         print('Getting products from {}.'.format(name))
+        headers = {'x-force-error-mode': 'all'}
         url = 'https://bad-api-assignment.reaktor.com/v2/availability/' + name
+        
+        # if name == 'okkau':
+            # m = requests.get(url, headers=headers)
+        # else:
+            # m = requests.get(url)
         m = requests.get(url)
+        print ('m.text len: {}'.format(len(m.text)))
         m_json = json.loads(m.text)
         m_query = Manufacturer.query.filter_by(name = name).first()
         
@@ -95,7 +120,7 @@ def get_manufacturers_products(names):
             manu_list.extend(m_json['response'])
             if m_query != None:
                 db.session.delete(m_query)
-        elif m_query == None :
+        elif m_query == None:
             m_fail = Manufacturer(name=name)
             db.session.add(m_fail)
     return manu_list
