@@ -9,6 +9,8 @@ from flask import g, current_app
 app = create_app()
 app.app_context().push()
 
+# rqworker --with-scheduler -w rq_win.WindowsWorker warehouse-tasks
+
 def create_db():
     try:
         job = get_current_job()
@@ -121,9 +123,9 @@ def check_caches():
             print('There are new products available')
             #need to initialize the database again, but this should be voluntary?
             create(True)
-            pass
         else:
             print('Everything is up to date')
+            #caches()
 
 def _set_task_progress(progress):
     job = get_current_job()

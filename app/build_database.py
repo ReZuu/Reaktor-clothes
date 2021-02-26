@@ -134,6 +134,7 @@ def create_product(products, manu_list, job):
         instock = get_stock(product['id'], manu_list)
         p = Product(id=product['id'], category=product['type'], name=product['name'], manufacturer=product['manufacturer'], stock=instock, price=product['price'])
         db.session.add(p)
+        #db.session.commit() #slows down the process extremily
         count += 1
         job.meta['progress'] = 100.0 * count / len(products)
         job.save_meta()

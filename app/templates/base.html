@@ -53,9 +53,9 @@
 	<script>
 		$(function(){
 			setInterval(function() {
-				console.log("interval ping");
-				$.ajax('{{ url_for('main.progress') }}?jobid=' + tasks.id).done(
+				$.ajax('{{ url_for('main.progress') }}').done(
 					function(progress) {
+						console.log("interval ping"),
 						set_task_progress(progress.id, progress.data);
 					}
 				);
