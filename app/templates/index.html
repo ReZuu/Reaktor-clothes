@@ -33,12 +33,3 @@
 		</tbody>
 	</table>
 {% endblock %}
-
-{% block scripts %}
-	{{ super() }}
-	<script>
-		$(document).ready(function(){
-			$(".sticky-header").floatThead({top:50});
-		});
-	</script>
-{% endblock %}

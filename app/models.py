@@ -20,9 +20,10 @@ class Product(db.Model):
 class Manufacturer(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
+    received = db.Column(db.Boolean)
     
     def __repr__(self):
-        return "<Manufacturer (%r)>" % (self.name)
+        return "<Manufacturer: (%r), received: (%r)>" % (self.name, self.received)
 
 #table class to keep track of ongoing and complete RQ tasks
 class Task(db.Model):
@@ -32,7 +33,7 @@ class Task(db.Model):
     description = db.Column(db.String(128))
     
     def __repr__(self):
-        return "<Task id is: (%r), complete: (%r))>" % (self.id, self.complete)
+        return "<Task name: (%r), complete: (%r))>" % (self.name, self.complete)
     
     def get_rq_job(self):
         try:
@@ -44,10 +45,8 @@ class Task(db.Model):
     def get_progress(self):
         job = self.get_rq_job()
         print ('job id in progress: {}, progress: {}'.format(job.get_id(), job.meta['progress']))
-        return job.meta.get('progress', 0) if job is not None else 100
-        
-    
-    
+        return int(job.meta.get('progress', 0) if job is not None else 100)
+         
 #table class to keep track of Etag's from the API 
 class Caches(db.Model):
     # id = Etag

@@ -11,9 +11,13 @@ from datetime import timedelta
 @bp.before_app_first_request
 def before_app_first_request():
     #should maybe check if there are some previous tasks in queue in RQ, as on local that seems to be a possibility. And flush them out. 
+    q_jobs = current_app.task_queue.jobs
+    print('q_jobs: {}'.format(q_jobs))
+    current_app.task_queue.empty() #this doesn't help since the RQ worker needs to be on and it starts doing the queue immediately
     
     #job = current_app.task_queue.enqueue('app.tasks.example', 23)
-    rq_job = current_app.task_queue.enqueue('app.tasks.create_db')
+    #rq_job = current_app.task_queue.enqueue('app.tasks.create_db')
+    create(False)
 
 
 #trying a one page solution for now, instead of having separate pages for all three categories
@@ -43,9 +47,14 @@ def index():
     except:
         pass
         
+    #tasks sometimes becomes None during the whole process...
+    # while updating, it is found again as complete
+    # tasks 
     if tasks:
         print('task progress: {}'.format (tasks.get_progress()))
-        print('all tasks: {}'.format (Task.query.all()))
+        if tasks.name == 'CacheCheck':
+            tasks = []
+    print('all tasks: {}'.format (Task.query.all()))
     
     return render_template('index.html', title='Reaktor Warehouse', category=category, products=products, tasks=tasks)
 
@@ -59,35 +68,25 @@ def switch_category(category):
 @bp.route('/progress')
 def progress():
     print('progress is being called')
-    jobid = request.args.get('jobid', type=string)
-    task = Task.query.filter_by(id=jobid).first()
-    if task:
-        return jsonify(task.get_progress())
-    return jsonify(50)
-    
-@bp.route('/progress2')
-def progress2():
-    jobid = request.values.get('jobid')
-    print('progress2 called')
-    print(jobid)
+    jobid = request.args.get('jobid', type=str)
+    print('jobid from ajax: {}'.format(jobid))
     if jobid:
         job = Task.query.filter_by(id=jobid).first()
         print('job progress in ajax')
         print(job.get_progress())
-        return jsonify(job.get_progress())
-    
-@bp.route('/ajax')
-def ajax():
-    print('ajax polling test')
-    
-@bp.route('/test')
-def test():
-    print ('ajax test')
-    time = requests.args.get('test', type=string)
-    if not time:
-        return jsonify({status: 'error: incorrect parameters'})
-    val = 50
-    return jsonify({status: 'success', data: val})
+        
+        return jsonify({
+            'name': job.name,
+            'data': job.get_progress()})
+
+def create(voluntary):
+    print('queueing database initialization')
+    if voluntary == False:
+        rq_job = current_app.task_queue.enqueue('app.tasks.create_db')
+    else:
+        #flash a message with link to update? 
+        #rq_job = current_app.task_queue.enqueue('app.tasks.create_db')
+        pass
     
 def update():
     print('queueing an update job')
@@ -97,7 +96,8 @@ def update():
 def caches():
     print('queueing a cache checking job')
     #for testing using less time than should, but considering the 5 minute cache time. Every 2.5 (150 seconds) mins might be reasonable? or even slower.
-    #rq_job = current_app.task_queue.enqueue_in(timedelta(seconds=15), 'app.tasks.check_caches')
-    pass
+    rq_job = current_app.task_queue.enqueue_in(timedelta(seconds=15), 'app.tasks.check_caches')
+    q_jobs = current_app.task_queue.jobs
+    print('q_jobs: {}'.format(q_jobs)) # is returning [] even though a task was just added before it
     #should first check if there is already a cache job queued, as not to spam them
     

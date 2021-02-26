@@ -47,11 +47,14 @@ def init_db(job):
     print ('Getting a list of all the manufacturers')
     manufacturer_names = []
     for product in products:
-        if len(manufacturer_names) != 0:
-            if product['manufacturer'] not in manufacturer_names:
-                manufacturer_names.append(product['manufacturer'])
-        else:
+        if product['manufacturer'] not in manufacturer_names:
+            if product['manufacturer'] not in Manufacturer.query.all():
+                new_manu = Manufacturer(name=product['manufacturer'])
+                db.session.add(new_manu)
             manufacturer_names.append(product['manufacturer'])
+    db.session.commit()
+    #print(manufacturer_names)
+    #print(Manufacturer.query.all())
     
     #create a list of all the manufacturers and their products
     # - alternative could call the API with the manufacturer + product_id to just get a single result, OR make separate list for all manufacturers, so would be easier to process and find the stock value
@@ -71,15 +74,15 @@ def fill_stock(job):
     # fill the missing stock values for products
     products = Product.query.filter_by(stock='Unknown').all()
     
-    #manu_names = get_manufacturers(products)
     #get the manufacturer names from database
     manu_names = []
-    m_query = Manufacturer.query.all()
+    m_query = Manufacturer.query.filter_by(received=False).all()
     if m_query:
         for item in m_query:
             manu_names.append(item.name)
     manu_list = get_manufacturers_products(manu_names)
     
+    #could add some update boolean to the function, so don't have to have this twice
     #create_product(products, manu_list, job)
     
     count = 0
@@ -100,6 +103,7 @@ def fill_stock(job):
   
 def get_manufacturers_products(names):
     manu_list = []
+    print (names)
     for name in names:
         print('Getting products from {}.'.format(name))
         headers = {'x-force-error-mode': 'all'}
@@ -110,7 +114,7 @@ def get_manufacturers_products(names):
         # else:
             # m = requests.get(url)
         m = requests.get(url)
-        print ('m.text len: {}'.format(len(m.text)))
+        print ('m.text length: {}'.format(len(m.text)))
         m_json = json.loads(m.text)
         m_query = Manufacturer.query.filter_by(name = name).first()
         
@@ -118,11 +122,10 @@ def get_manufacturers_products(names):
             m_etag = Caches(id=m.headers['Etag'], name=name)
             db.session.add(m_etag)
             manu_list.extend(m_json['response'])
-            if m_query != None:
-                db.session.delete(m_query)
-        elif m_query == None:
-            m_fail = Manufacturer(name=name)
-            db.session.add(m_fail)
+            if m_query.received != True:
+                m_query.received = True
+        else:
+            m_query.received = False
     return manu_list
     
 def create_product(products, manu_list, job):
