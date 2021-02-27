@@ -23,6 +23,7 @@ def create_app(config_class=Config):
     bootstrap.init_app(app)
     app.redis = Redis.from_url(app.config['REDIS_URL'])
     app.task_queue = rq.Queue('warehouse-tasks', connection=app.redis, default_timeout=3600)
+    app.task_queue.empty()
 
     from app.errors import bp as errors_bp
     app.register_blueprint(errors_bp)

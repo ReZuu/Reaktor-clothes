@@ -13,10 +13,7 @@ def before_app_first_request():
     #should check if there are some previous tasks in queue in RQ, as on local that seems to be a possibility. And flush them out. 
     q_jobs = current_app.task_queue.jobs
     print('q_jobs: {}'.format(q_jobs))
-    for job in q_jobs:
-        print('test2')
-        job.cancel()
-    current_app.task_queue.empty() 
+    #this doesn't work for some reason
      
     
     session['recreate'] = False    
