@@ -87,13 +87,14 @@ def index():
     # try to get current task, it might be locked at certain points
     try:
         tasks = Task.query.filter_by(complete=False).first()
-        session['tasks'] = tasks.id
+        if tasks:
+            session['tasks'] = tasks.id
 
-        if tasks.name == 'CacheCheck':
-            tasks = []
+            if tasks.name == 'CacheCheck':
+                tasks = []
     except:
         tasks = []
-        print('last task id: {}'.format(sessions['tasks']))
+        print('last task id: {}'.format(session['tasks']))
         job = current_app.task_queue.fetch_job(session['tasks'])
         if job:
             print('progress: {}'.format(job.meta['progress']))
