@@ -20,6 +20,8 @@ def init_db(job):
         products += gloves
     gloves_etag = Caches(id=r_gloves.headers['Etag'], name='Gloves')
     db.session.add(gloves_etag)
+    job.meta['progress'] = 3
+    job.save_meta()
     
     r_beanies = requests.get('https://bad-api-assignment.reaktor.com/v2/products/beanies')
     if (r_beanies.status_code != 503):
@@ -27,6 +29,8 @@ def init_db(job):
         products += beanies
     beanies_etag = Caches(id=r_beanies.headers['Etag'], name='Beanies')
     db.session.add(beanies_etag)
+    job.meta['progress'] = 6
+    job.save_meta()
         
     r_facemasks = requests.get('https://bad-api-assignment.reaktor.com/v2/products/facemasks')
     if (r_facemasks.status_code != 503):
@@ -34,6 +38,9 @@ def init_db(job):
         products += facemasks
     facemasks_etag = Caches(id=r_facemasks.headers['Etag'], name='Facemasks')
     db.session.add(facemasks_etag)
+    job.meta['progress'] = 9
+    job.save_meta()
+    
     #would flasks request.get_json() be better for these or does it even matter?
     #would try-except be better here or not?
     
@@ -53,6 +60,8 @@ def init_db(job):
                 db.session.add(new_manu)
             manufacturer_names.append(product['manufacturer'])
     db.session.commit()
+    job.meta['progress'] = 10
+    job.save_meta()
     #print(manufacturer_names)
     #print(Manufacturer.query.all())
     
@@ -61,9 +70,9 @@ def init_db(job):
     # alt.cons: if the list changes before the process is done for all products, it will cause issues
     # alt.pros: don't have a massive list to process everytime I want to get the stock value 
     print ('Getting a list of all the manufacturers products')
-    manufacturer_list = get_manufacturers_products(manufacturer_names)
+    manufacturer_list = get_manufacturers_products(manufacturer_names, job)
     
-    print ('Failed to get these manufacturers: {}'.format(Manufacturer.query.all()))
+    print ('Failed to get these manufacturers: {}'.format(Manufacturer.query.filter_by(received=False).all()))
     #create a new background task for getting the stock value from these, with a short delay
 
     # fill the database with products 
@@ -73,6 +82,8 @@ def init_db(job):
 def fill_stock(job):
     # fill the missing stock values for products
     products = Product.query.filter_by(stock='Unknown').all()
+    job.meta['progress'] = 9
+    job.save_meta()
     
     #get the manufacturer names from database
     manu_names = []
@@ -80,19 +91,20 @@ def fill_stock(job):
     if m_query:
         for item in m_query:
             manu_names.append(item.name)
-    manu_list = get_manufacturers_products(manu_names)
+    manu_list = get_manufacturers_products(manu_names, job)
     
     #could add some update boolean to the function, so don't have to have this twice
     #create_product(products, manu_list, job)
     
     count = 0
+    prev_progress = job.meta['progress']
     for product in products:
         instock = get_stock(product.id, manu_list)
         product.stock = instock
         count += 1
-        job.meta['progress'] = 100.0 * count / len(products)
+        job.meta['progress'] = prev_progress + 100.0 * count / len(products)
         job.save_meta()
-        print(job.meta['progress'])
+        #print(job.meta['progress'])
     
     job.meta['progress'] = 100
     job.save_meta()
@@ -101,10 +113,13 @@ def fill_stock(job):
     
     #check if there are still failed manufacturers in the table and requeue a new job for it, with a delay
   
-def get_manufacturers_products(names):
+def get_manufacturers_products(names, job):
     manu_list = []
     print (names)
+    prev_progress = job.meta['progress']
+    count = 0
     for name in names:
+        count += 1
         print('Getting products from {}.'.format(name))
         headers = {'x-force-error-mode': 'all'}
         url = 'https://bad-api-assignment.reaktor.com/v2/availability/' + name
@@ -115,7 +130,15 @@ def get_manufacturers_products(names):
             # m = requests.get(url)
         m = requests.get(url)
         print ('m.text length: {}'.format(len(m.text)))
-        m_json = json.loads(m.text)
+        if len(m.text) > 0:
+            try:
+                m_json = json.loads(m.text)
+            except:
+                print(m.headers)
+                m_json = {'response': '[]'}
+        else:
+            print(m)
+            m_json = {'response': '[]'}
         m_query = Manufacturer.query.filter_by(name = name).first()
         
         if m_json['response'] != '[]':
@@ -126,19 +149,24 @@ def get_manufacturers_products(names):
                 m_query.received = True
         else:
             m_query.received = False
+            
+        job.meta['progress'] = prev_progress + 30.0 * count / len(names)
+        #print (job.meta['progress'])
+        job.save_meta()
     return manu_list
     
 def create_product(products, manu_list, job):
+    prev_progress = job.meta['progress']
     count = 0
     for product in products:
         instock = get_stock(product['id'], manu_list)
         p = Product(id=product['id'], category=product['type'], name=product['name'], manufacturer=product['manufacturer'], stock=instock, price=product['price'])
         db.session.add(p)
-        #db.session.commit() #slows down the process extremily
+        #db.session.commit() #slows down the process extremely
         count += 1
-        job.meta['progress'] = 100.0 * count / len(products)
+        job.meta['progress'] = prev_progress + (100.0 - prev_progress) * count / len(products)
         job.save_meta()
-        print(job.meta['progress'])
+        #print(job.meta['progress'])
     
     job.meta['progress'] = 100
     job.save_meta()

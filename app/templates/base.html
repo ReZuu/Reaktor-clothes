@@ -38,10 +38,18 @@
 
 {% block content %}
 	<div class="container-fluid">
-		{% if tasks %}
+		{% if tasks or recreate == True %}
 			<div class="alert alert-success" role="alert">
+				{% if tasks %}
 				{{ tasks.description }}
 				<span id="{{ tasks.id }}-progress">{{ tasks.get_progress()}}</span>%
+				{% endif %}
+				{% if tasks and recreate == True %}
+				&nbsp&nbsp&nbsp - &nbsp&nbsp&nbsp
+				{% endif %}
+				{% if recreate == True %}
+				<span id="recreate">New data on API, <a href="{{ url_for('main.recreate') }}">update?</a></span>
+				{% endif %}
 			</div>
 		{% endif %}
 		{% block app_content %}{% endblock %}
@@ -53,13 +61,17 @@
 	<script>
 		$(function(){
 			setInterval(function() {
-				$.ajax('{{ url_for('main.progress') }}').done(
-					function(progress) {
-						console.log("interval ping"),
-						set_task_progress(progress.id, progress.data);
+				$.ajax({
+					url: '{{ url_for('main.progress') }}',
+					success: function(response) {
+						if (response.refresh == true){
+							location.reload()
+						}
+						set_task_progress(response.id, response.data),
+						console.log(response)
 					}
-				);
-			},10000);
+				});
+			},5000);
 		});
 		
 		function set_task_progress(task_id, progress) {

@@ -49,7 +49,7 @@ def update_db():
         job = get_current_job()
         print('Updating databases')
         print('Current job: {}'.format(job.id))
-        task = Task(id=job.get_id(), name='UpdatingDb', description='Updating product databases - progress: ', complete=False)
+        task = Task(id=job.get_id(), name='UpdatingDb', description='Updating missing stock values - progress: ', complete=False)
         _set_task_progress(0)
         
         db.session.add(task)
