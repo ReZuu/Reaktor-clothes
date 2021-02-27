@@ -69,7 +69,8 @@ def update_db():
         manu_fails = Manufacturer.query.filter_by(received=False).all()
         if manu_fails:
             print ('manu fails are: {}'.format(manu_fails))
-            update()
+            #update()
+            caches()
         else:
             caches()
         
@@ -126,6 +127,8 @@ def check_caches():
         _set_task_progress(100)
         
         #isUpToDate = False #forcing cache check to fail
+        #testcase = 'diibadaaba'
+        #return testcase
         
         if isUpToDate == False:
             print('There are new products available')

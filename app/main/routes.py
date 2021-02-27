@@ -53,10 +53,6 @@ def before_request():
     try:
         tasks = Task.query.filter_by(complete=False).first()
         print('current task is: {}'.format(tasks.name))
-        prevTask = Task.query.filter_by(id=session['tasks']).first()
-        if tasks.name == 'UpdateDb' and tasks.id != prevTask.id:
-            session['update'] = True
-            print('will this get called too many times?')
         session['tasks'] = tasks.id
         session['task_name'] = tasks.name
     except:
@@ -81,6 +77,7 @@ def index():
     #print ('category: {}'.format(category))
         
     recreate = session['recreate']
+    print ('recreate : {}'.format(recreate))
 
     # try to get products table, it might be locked at certain points
     try:
@@ -96,6 +93,7 @@ def index():
             tasks = []
     except:
         tasks = []
+        print('last task id: {}'.format(sessions['tasks']))
         job = current_app.task_queue.fetch_job(session['tasks'])
         if job:
             print('progress: {}'.format(job.meta['progress']))
