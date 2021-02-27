@@ -11,6 +11,8 @@ app.app_context().push()
 
 # rqworker --with-scheduler -w rq_win.WindowsWorker warehouse-tasks
 
+#might want to skip the "finally" parts and move the contents into "try", as the "finally" gets called after "except" as well
+
 def create_db():
     try:
         job = get_current_job()
@@ -33,7 +35,7 @@ def create_db():
     except:
         print('Unhandled exception on creating db')
         app.logger.error('Unhandled exception', exc_info=sys.exc_info())
-        _set_task_progress(100)
+        #_set_task_progress(100)
     finally:
         print('Finished creating databases')
         _set_task_progress(100)
@@ -42,7 +44,8 @@ def create_db():
         if manu_fails:
             print ('manu fails are: {}'.format(manu_fails))
             update()
-        caches()
+        else:
+            caches()
     
 def update_db():
     try:
@@ -58,7 +61,7 @@ def update_db():
     except:
         print('Unhandled exception on update db')
         app.logger.error('Unhandled exception', exc_info=sys.exc_info())
-        _set_task_progress(100)
+        #_set_task_progress(100)
     finally:  
         print('Finished updating databases')
         _set_task_progress(100)
@@ -67,6 +70,8 @@ def update_db():
         if manu_fails:
             print ('manu fails are: {}'.format(manu_fails))
             update()
+        else:
+            caches()
         
 def check_caches():
     try:
@@ -115,14 +120,17 @@ def check_caches():
         print('manufacturers checked')
     except:
         print('Unhandled exception on checking caches')
-        _set_task_progress(100)
+       # _set_task_progress(100)
     finally:
         print('Finished checking caches')
         _set_task_progress(100)
+        
+        isUpToDate = False #forcing cache check to fail
+        
         if isUpToDate == False:
             print('There are new products available')
             #need to initialize the database again, but this should be voluntary?
-            create(True)
+            #create(True)
         else:
             print('Everything is up to date')
             #caches()

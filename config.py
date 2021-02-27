@@ -12,3 +12,5 @@ class Config(object):
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     REDIS_URL = os.environ.get('REDIS_URL') or 'redis://'
     LOG_TO_STDOUT = os.environ.get('LOG_TO_STDOUT')
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_SECURE = True
