@@ -9,6 +9,7 @@ from datetime import timedelta
 
 @bp.before_app_first_request
 def before_app_first_request():
+    print('this should only get printed once')
     #should check if there are some previous tasks in queue in RQ, as on local that seems to be a possibility. And flush them out. 
     q_jobs = current_app.task_queue.jobs
     print('q_jobs: {}'.format(q_jobs))
@@ -30,6 +31,7 @@ def before_app_first_request():
     #does this cause more harm than good?
     
     #calling the initial creation of databases with 'False' in order to force the database creation for the first request of the app
+    print ('Starting the initial database creation')
     create(False)
                 
 @bp.before_request
@@ -61,7 +63,7 @@ def before_request():
     
     if session['startup'] == True:
         session['refresh'] = True
-    print('refresh is: {}'.format(session['refresh']))
+    #print('refresh is: {}'.format(session['refresh']))
 
 
 #trying a one page solution for now, instead of having separate pages for all three categories

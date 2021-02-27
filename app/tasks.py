@@ -69,8 +69,8 @@ def update_db():
         manu_fails = Manufacturer.query.filter_by(received=False).all()
         if manu_fails:
             print ('manu fails are: {}'.format(manu_fails))
-            #update()
-            caches()
+            update()
+            #caches()
         else:
             caches()
         
