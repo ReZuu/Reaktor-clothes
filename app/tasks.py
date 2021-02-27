@@ -125,7 +125,7 @@ def check_caches():
         print('Finished checking caches')
         _set_task_progress(100)
         
-        isUpToDate = False #forcing cache check to fail
+        #isUpToDate = False #forcing cache check to fail
         
         if isUpToDate == False:
             print('There are new products available')

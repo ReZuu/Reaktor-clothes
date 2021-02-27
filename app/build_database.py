@@ -102,7 +102,7 @@ def fill_stock(job):
         instock = get_stock(product.id, manu_list)
         product.stock = instock
         count += 1
-        job.meta['progress'] = prev_progress + 100.0 * count / len(products)
+        job.meta['progress'] = prev_progress + (100.0 - prev_progress) * count / len(products)
         job.save_meta()
         #print(job.meta['progress'])
     
@@ -124,6 +124,7 @@ def get_manufacturers_products(names, job):
         headers = {'x-force-error-mode': 'all'}
         url = 'https://bad-api-assignment.reaktor.com/v2/availability/' + name
         
+        # test case for intentional failures
         # if name == 'okkau':
             # m = requests.get(url, headers=headers)
         # else:

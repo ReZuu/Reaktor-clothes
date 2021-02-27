@@ -22,7 +22,7 @@ def before_app_first_request():
         session['category'] = 'Gloves'
     session['task_name'] = 'Unknown'
     session['tasks'] = '0'
-    g.test = False
+    session['update'] = False
     
     #otherwise it would still show old "cached" tables, even though the database is being created in the background
     #db.drop_all()
@@ -41,32 +41,27 @@ def before_request():
         if tasks:
             if tasks.name == 'CreateDb' and tasks.complete == True and session['task_name'] != 'DONE':
                 session['refresh'] = True
-            if tasks.name == 'UpdateDb' and tasks.complete == True and session['task_name'] != 'DONE':
-                print('is this failing? 1')
-                session['refresh'] = True
-        else:
             job = current_app.task_queue.fetch_job(session['tasks'])
             if session['task_name'] == 'CreateDb' and job.get_status() == 'Finished':
                 session['refresh'] = True
-            if session['task_name'] == 'UpdateDb' and job.get_status() == 'Finished':
-                session['refresh'] = True
-                print('is this failing? 2')
     except:
         #if locked use the job id and name in session 
         job = current_app.task_queue.fetch_job(session['tasks'])
         if session['task_name'] == 'CreateDb' and job.get_status() == 'Finished':
             session['refresh'] = True
-        if session['task_name'] == 'UpdateDb' and job.get_status() == 'Finished':
-            session['refresh'] = True
-            print('is this failing? 3')
 
     try:
         tasks = Task.query.filter_by(complete=False).first()
         print('current task is: {}'.format(tasks.name))
+        prevTask = Task.query.filter_by(id=session['tasks']).first()
+        if tasks.name == 'UpdateDb' and tasks.id != prevTask.id:
+            session['update'] = True
+            print('will this get called too many times?')
         session['tasks'] = tasks.id
         session['task_name'] = tasks.name
     except:
         pass
+
     
     if session['startup'] == True:
         session['refresh'] = True
@@ -86,7 +81,6 @@ def index():
     #print ('category: {}'.format(category))
         
     recreate = session['recreate']
-    
 
     # try to get products table, it might be locked at certain points
     try:
@@ -97,6 +91,7 @@ def index():
     try:
         tasks = Task.query.filter_by(complete=False).first()
         session['tasks'] = tasks.id
+
         if tasks.name == 'CacheCheck':
             tasks = []
     except:
@@ -104,7 +99,6 @@ def index():
         job = current_app.task_queue.fetch_job(session['tasks'])
         if job:
             print('progress: {}'.format(job.meta['progress']))
-
 
     #tasks sometimes becomes None during the whole process, due to database being locked. 
     #should maybe save a reference to it elsewhere (like session) and when it fails, load it from there? Thus having at least the old values/data instead of nothing
@@ -176,7 +170,7 @@ def create(voluntary):
         #flash a message with link to update? 
         #session['recreate'] = True
         #session['refresh'] = True
-        g.test = True
+        pass
         #cause an event for ajax to refresh the flash msg?
 
 #RQ sometimes doesn't start the scheduled jobs, could be an issue in RQ_win?   
