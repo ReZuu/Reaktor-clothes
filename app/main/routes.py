@@ -13,6 +13,9 @@ def before_app_first_request():
     #should check if there are some previous tasks in queue in RQ, as on local that seems to be a possibility. And flush them out. 
     q_jobs = current_app.task_queue.jobs
     print('q_jobs: {}'.format(q_jobs))
+    for job in q_jobs:
+        print('test2')
+        job.cancel()
     current_app.task_queue.empty() 
     #this doesn't help since the RQ worker needs to be on and it starts doing the queue immediately, when it gets turned on.    
     
@@ -160,6 +163,9 @@ def recreate():
 def create(voluntary):
     q_jobs = current_app.task_queue.jobs
     print('q_jobs: {}'.format(q_jobs))
+    if q_jobs:
+        for job in q_jobs:
+            job.cancel()
     current_app.task_queue.empty() 
     print('queueing database initialization')
     if voluntary == False:
