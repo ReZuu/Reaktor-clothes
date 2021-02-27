@@ -17,7 +17,7 @@ def before_app_first_request():
         print('test2')
         job.cancel()
     current_app.task_queue.empty() 
-    #this doesn't help since the RQ worker needs to be on and it starts doing the queue immediately, when it gets turned on.    
+     
     
     session['recreate'] = False    
     session['refresh'] = False
@@ -170,9 +170,19 @@ def create(voluntary):
     print('queueing database initialization')
     if voluntary == False:
         session['recreate'] = False
-        rq_job = current_app.task_queue.enqueue('app.tasks.create_db')
-        session['refresh'] = True
-        session['startup'] = True
+        try:
+            tasks = Task.query.filter_by(name='CreateDb').all()
+            if tasks:
+                initializing = False
+                for task in tasks:
+                    if task.complete == False:
+                        initializing = True
+                    else:
+                        rq_job = current_app.task_queue.enqueue('app.tasks.create_db')
+                        session['refresh'] = True
+                        session['startup'] = True
+        except:
+            print('Something went horribly wrong')
     else:
         #flash a message with link to update? 
         #session['recreate'] = True
