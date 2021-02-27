@@ -70,13 +70,12 @@ def update_db():
         if manu_fails:
             print ('manu fails are: {}'.format(manu_fails))
             update()
-            #caches()
         else:
             caches()
         
 def check_caches():
+    isUpToDate = True
     try:
-        isUpToDate = True
         print ('Checking cache versions')
         job = get_current_job()
         task = Task(id=job.get_id(), name='CacheCheck', description='Checking server caches for newer versions', complete=False)
@@ -91,18 +90,31 @@ def check_caches():
         if r_gloves.headers['Etag'] != gloves_query.id:
             #it needs to be updated
             isUpToDate = False
+            gloves_query.uptodate = False
+        else:
+            gloves_query.uptodate = True
             
         r_beanies = requests.get('https://bad-api-assignment.reaktor.com/v2/products/beanies')
         beanies_query = Caches.query.filter_by(name='Beanies').first()
         if r_beanies.headers['Etag'] != beanies_query.id:
             #it needs to be updated
             isUpToDate = False
+            beanies_query.uptodate = False
+        else:
+            beanies_query.uptodate = True
             
         r_facemasks = requests.get('https://bad-api-assignment.reaktor.com/v2/products/facemasks')
         facemasks_query = Caches.query.filter_by(name='Facemasks').first()
         if r_facemasks.headers['Etag'] != facemasks_query.id:
             #it needs to be updated
             isUpToDate = False
+            facemasks_query.uptodate = False
+        else:
+            facemasks_query.uptodate = True
+            
+        #forcing cachecheck to fail
+        #facemasks_query.uptodate = False
+        #isUpToDate = False
         
         print('cache products checked')
         manu_names = Manufacturer.query.all()
@@ -118,7 +130,11 @@ def check_caches():
                 if m_request.headers['Etag'] != cache_query.id:
                     #it needs to be updated
                     isUpToDate = False
+                    cache_query.uptodate = False
+                else:
+                    cache_query.uptodate = True
         print('manufacturers checked')
+        db.session.commit()
     except:
         print('Unhandled exception on checking caches')
        # _set_task_progress(100)
@@ -127,13 +143,15 @@ def check_caches():
         _set_task_progress(100)
         
         #isUpToDate = False #forcing cache check to fail
-        #testcase = 'diibadaaba'
-        #return testcase
         
         if isUpToDate == False:
             print('There are new products available')
             #need to initialize the database again, but this should be voluntary?
             #create(True)
+            cache = Caches.query.filter_by(uptodate=False).all()
+            if cache:
+                for item in cache:
+                    print(item)
         else:
             print('Everything is up to date')
             #caches()

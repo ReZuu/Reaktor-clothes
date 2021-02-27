@@ -51,6 +51,9 @@
 				<span id="recreate">New data on API, <a href="{{ url_for('main.recreate') }}">update?</a></span>
 				{% endif %}
 			</div>
+			<div id="new_items" class="aler alert-success" role="alert" style='display:none;'>
+				<span id="recreate">New data on API, <a href="{{ url_for('main.recreate') }}">update?</a></span>
+			</div>
 		{% endif %}
 		{% block app_content %}{% endblock %}
 	</div>
@@ -68,6 +71,7 @@
 							location.reload()
 						}
 						set_task_progress(response.id, response.data)
+						toggleAlert(response.recreate)
 					}
 				});
 			},5000);
@@ -75,6 +79,15 @@
 		
 		function set_task_progress(task_id, progress) {
 			$('#' + task_id + '-progress').text(progress);
+		}
+		
+		function toggleAlert(recreate){
+			if (recreate == true){
+				$("#new_items").show();
+			}else{
+				$("#new_items").hide();
+			}
+			
 		}
 	</script>
 {% endblock %}

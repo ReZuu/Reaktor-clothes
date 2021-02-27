@@ -31,6 +31,7 @@ class Task(db.Model):
     name = db.Column(db.String(128), index=True)
     complete = db.Column(db.Boolean, default=False)
     description = db.Column(db.String(128))
+    recreate = db.Column(db.Boolean, default=False)
     #refresh = db.Column(db.Boolean, default=False) #for some reason this breaks the whole database even if I do flask db migrate and upgrade
     
     def __repr__(self):
@@ -54,6 +55,7 @@ class Caches(db.Model):
     id = db.Column(db.String(128), primary_key=True)
     # name = Category or manufacturer name
     name = db.Column(db.String(36), index=True)
+    uptodate = db.Column(db.Boolean, default=False)
     
     def __repr__(self):
         return "<Cache tag for (%r)>" % (self.name)

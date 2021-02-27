@@ -46,6 +46,12 @@ def before_request():
             job = current_app.task_queue.fetch_job(session['tasks'])
             if session['task_name'] == 'CreateDb' and job.get_status() == 'Finished':
                 session['refresh'] = True
+            if tasks.name == 'CacheCheck' and tasks.complete == True:
+                print('Cache check is done')
+                cache = Caches.query.filter_by(uptodate=False).all()
+                if cache:
+                    print('is this failing')
+                    session['recreate'] = True
     except:
         #if locked use the job id and name in session 
         job = current_app.task_queue.fetch_job(session['tasks'])
@@ -91,7 +97,7 @@ def index():
         tasks = Task.query.filter_by(complete=False).first()
         if tasks:
             session['tasks'] = tasks.id
-
+            session['task_name'] = tasks.name
             if tasks.name == 'CacheCheck':
                 tasks = []
     except:
@@ -145,12 +151,14 @@ def progress():
         return jsonify({
             'id': job.id,
             'data': int(job.meta['progress']),
-            'refresh': refresh})
+            'refresh': refresh,
+            'recreate': session['recreate']})
     else:
         return jsonify({
             'id': 0,
             'data': 0,
-            'refresh': refresh})
+            'refresh': refresh,
+            'recreate': session['recreate']})
             
 @bp.route('/recreate')
 def recreate():
