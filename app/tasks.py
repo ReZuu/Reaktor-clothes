@@ -44,6 +44,7 @@ def create_db():
         if manu_fails:
             print ('manu fails are: {}'.format(manu_fails))
             update()
+            #caches()
         else:
             caches()
     
@@ -70,6 +71,7 @@ def update_db():
         if manu_fails:
             print ('manu fails are: {}'.format(manu_fails))
             update()
+            #caches()
         else:
             caches()
         
@@ -78,7 +80,7 @@ def check_caches():
     try:
         print ('Checking cache versions')
         job = get_current_job()
-        task = Task(id=job.get_id(), name='CacheCheck', description='Checking server caches for newer versions', complete=False)
+        task = Task(id=job.get_id(), name='CacheCheck', description='Checking server caches for newer versions', complete=False, recreate=False)
         _set_task_progress(0)
         db.session.add(task)
         db.session.commit()
@@ -148,6 +150,8 @@ def check_caches():
             print('There are new products available')
             #need to initialize the database again, but this should be voluntary?
             #create(True)
+            task.recreate = True
+            db.session.commit()
             cache = Caches.query.filter_by(uptodate=False).all()
             if cache:
                 for item in cache:
@@ -166,15 +170,3 @@ def _set_task_progress(progress):
         if progress >= 100:
             task.complete = True
         db.session.commit()
-   
-def example(seconds=23):
-    job = get_current_job()
-    print('Starting task')
-    for i in range(seconds):
-        job.meta['progress'] = 100.0 * i / seconds
-        job.save_meta()
-        print(job.meta['progress'])
-        time.sleep(1)
-    job.meta['progress'] = 100
-    job.save_meta()
-    print('Task completed')

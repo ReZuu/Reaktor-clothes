@@ -32,7 +32,6 @@ class Task(db.Model):
     complete = db.Column(db.Boolean, default=False)
     description = db.Column(db.String(128))
     recreate = db.Column(db.Boolean, default=False)
-    #refresh = db.Column(db.Boolean, default=False) #for some reason this breaks the whole database even if I do flask db migrate and upgrade
     
     def __repr__(self):
         return "<Task name: (%r), complete: (%r))>" % (self.name, self.complete)

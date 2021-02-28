@@ -38,23 +38,17 @@
 
 {% block content %}
 	<div class="container-fluid">
-		{% if tasks or recreate == True %}
+		{% if tasks == True %}
 			<div class="alert alert-success" role="alert">
 				{% if tasks %}
 				{{ tasks.description }}
 				<span id="{{ tasks.id }}-progress">{{ tasks.get_progress()}}</span>%
 				{% endif %}
-				{% if tasks and recreate == True %}
-				&nbsp&nbsp&nbsp - &nbsp&nbsp&nbsp
-				{% endif %}
-				{% if recreate == True %}
-				<span id="recreate">New data on API, <a href="{{ url_for('main.recreate') }}">update?</a></span>
-				{% endif %}
-			</div>
-			<div id="new_items" class="aler alert-success" role="alert" style='display:none;'>
-				<span id="recreate">New data on API, <a href="{{ url_for('main.recreate') }}">update?</a></span>
 			</div>
 		{% endif %}
+		<div id="new_items" class="aler alert-success" role="alert" style="display:none;">
+			<span id="recreate">New data on API, <a href="{{ url_for('main.recreate') }}">update?</a></span>
+		</div>
 		{% block app_content %}{% endblock %}
 	</div>
 {% endblock %}

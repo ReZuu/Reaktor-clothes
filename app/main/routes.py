@@ -9,11 +9,10 @@ from datetime import timedelta
 
 @bp.before_app_first_request
 def before_app_first_request():
-    print('this should only get printed once')
+    print('this should only get printed once') #deploy does it twice
     #should check if there are some previous tasks in queue in RQ, as on local that seems to be a possibility. And flush them out. 
     q_jobs = current_app.task_queue.jobs
     print('q_jobs: {}'.format(q_jobs))
-    #this doesn't work for some reason
      
     
     session['recreate'] = False    
@@ -43,21 +42,18 @@ def before_request():
         if tasks:
             if tasks.name == 'CreateDb' and tasks.complete == True and session['task_name'] != 'DONE':
                 session['refresh'] = True
-            job = current_app.task_queue.fetch_job(session['tasks'])
-            if session['task_name'] == 'CreateDb' and job.get_status() == 'Finished':
-                session['refresh'] = True
             if tasks.name == 'CacheCheck' and tasks.complete == True:
-                print('Cache check is done')
-                cache = Caches.query.filter_by(uptodate=False).all()
-                if cache:
-                    print('is this failing')
+                #print('Cache check is done')
+                #print(tasks)
+                if tasks.recreate == True:
                     session['recreate'] = True
     except:
         #if locked use the job id and name in session 
         job = current_app.task_queue.fetch_job(session['tasks'])
         if session['task_name'] == 'CreateDb' and job.get_status() == 'Finished':
             session['refresh'] = True
-
+        if session['task_name'] == 'CacheCheck' and job.get_status() == 'Finished':
+            pass
     try:
         tasks = Task.query.filter_by(complete=False).first()
         print('current task is: {}'.format(tasks.name))
@@ -70,7 +66,13 @@ def before_request():
     if session['startup'] == True:
         session['refresh'] = True
     #print('refresh is: {}'.format(session['refresh']))
-
+    
+    #could do a periodic check here to see if a job is stuck in queue?
+    q_jobs = current_app.task_queue.jobs
+    if q_jobs:
+        print(q_jobs)
+        for job in q_jobs:
+            print(job)
 
 #trying a one page solution for now, instead of having separate pages for all three categories
 #could just as well make three different endpoints for all the categories, which currently just redirect to this instead
@@ -85,7 +87,7 @@ def index():
     #print ('category: {}'.format(category))
         
     recreate = session['recreate']
-    print ('recreate : {}'.format(recreate))
+    #print ('recreate : {}'.format(recreate))
 
     # try to get products table, it might be locked at certain points
     try:
@@ -120,7 +122,7 @@ def index():
     
     return render_template('index.html', title='Reaktor Warehouse', category=category, products=products, tasks=tasks, recreate=recreate)
 
-#change category, redirect to index. Don't think I need these, g.var for category might be simpler.
+#change category, redirect to index
 @bp.route('/switch_category/<string:category>')
 def switch_category(category):
     session['category'] = category
@@ -143,6 +145,8 @@ def progress():
     #print('progress is being called from ajax')
     job = current_app.task_queue.fetch_job(session['tasks'])
     refresh = session['refresh']
+    recreate = session['recreate']
+    #recreate = True
     if job:
         if refresh == True:
             session['refresh'] = False
@@ -152,18 +156,19 @@ def progress():
             'id': job.id,
             'data': int(job.meta['progress']),
             'refresh': refresh,
-            'recreate': session['recreate']})
+            'recreate': recreate})
     else:
         return jsonify({
             'id': 0,
             'data': 0,
             'refresh': refresh,
-            'recreate': session['recreate']})
-            
+            'recreate': recreate})
+
+#this could be abused, would ideally need a better solution for this            
 @bp.route('/recreate')
 def recreate():
-    # should just stop all current tasks and empty the queue first?
     create(False)
+    return redirect(url_for('main.index'))
 
 def create(voluntary):
     q_jobs = current_app.task_queue.jobs
@@ -175,19 +180,8 @@ def create(voluntary):
     print('queueing database initialization')
     if voluntary == False:
         session['recreate'] = False
-        try:
-            tasks = Task.query.filter_by(name='CreateDb').all()
-            if tasks:
-                initializing = False
-                for task in tasks:
-                    if task.complete == False:
-                        initializing = True
-                    else:
-                        rq_job = current_app.task_queue.enqueue('app.tasks.create_db')
-                        session['refresh'] = True
-                        session['startup'] = True
-        except:
-            print('Something went horribly wrong')
+        rq_job = current_app.task_queue.enqueue('app.tasks.create_db')
+        
     else:
         #flash a message with link to update? 
         #session['recreate'] = True
@@ -195,11 +189,12 @@ def create(voluntary):
         pass
         #cause an event for ajax to refresh the flash msg?
 
-#RQ sometimes doesn't start the scheduled jobs, could be an issue in RQ_win?   
+#RQ sometimes doesn't start the scheduled jobs, could be an issue in RQ_win?
+#need a solution for this, other than restarting RQ
 def update():
     print('queueing an update job')
     # don't want to do it immediately since, the API will probably take a moment to work correctly anyway
-    rq_job = current_app.task_queue.enqueue_in(timedelta(seconds=5), 'app.tasks.update_db')
+    rq_job = current_app.task_queue.enqueue_in(timedelta(seconds=10), 'app.tasks.update_db')
     
 def caches():
     print('queueing a cache checking job')
