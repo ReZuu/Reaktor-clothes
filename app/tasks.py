@@ -156,9 +156,10 @@ def check_caches():
             if cache:
                 for item in cache:
                     print(item)
+            #should be able to return the recreate value as a result of the job as well, which might have been easier/better
         else:
             print('Everything is up to date')
-            #caches()
+            caches()
 
 def _set_task_progress(progress):
     job = get_current_job()

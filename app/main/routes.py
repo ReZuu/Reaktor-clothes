@@ -13,6 +13,7 @@ def before_app_first_request():
     #should check if there are some previous tasks in queue in RQ, as on local that seems to be a possibility. And flush them out. 
     q_jobs = current_app.task_queue.jobs
     print('q_jobs: {}'.format(q_jobs))
+    current_app.task_queue.delete(delete_jobs=True)
      
     
     session['recreate'] = False    
@@ -74,7 +75,7 @@ def before_request():
         for job in q_jobs:
             print(job)
 
-#trying a one page solution for now, instead of having separate pages for all three categories
+#trying a one "page" solution for now, instead of having separate pages for all three categories
 #could just as well make three different endpoints for all the categories, which currently just redirect to this instead
 @bp.route('/')
 @bp.route('/index')
@@ -164,7 +165,8 @@ def progress():
             'refresh': refresh,
             'recreate': recreate})
 
-#this could be abused, would ideally need a better solution for this            
+#this could be abused, would ideally need a better solution for this     
+#but also for this purpose it could be run to see how long it takes to get up and running and that everything still works after recreate       
 @bp.route('/recreate')
 def recreate():
     create(False)
@@ -176,30 +178,25 @@ def create(voluntary):
     if q_jobs:
         for job in q_jobs:
             job.cancel()
-    current_app.task_queue.empty() 
+    current_app.task_queue.empty()
+    current_app.task_queue.delete(delete_jobs=True)
     print('queueing database initialization')
     if voluntary == False:
         session['recreate'] = False
-        rq_job = current_app.task_queue.enqueue('app.tasks.create_db')
-        
-    else:
-        #flash a message with link to update? 
-        #session['recreate'] = True
-        #session['refresh'] = True
-        pass
-        #cause an event for ajax to refresh the flash msg?
+        rq_job = current_app.task_queue.enqueue('app.tasks.create_db', at_front=True)
 
 #RQ sometimes doesn't start the scheduled jobs, could be an issue in RQ_win?
 #need a solution for this, other than restarting RQ
+#hard to reproduce
 def update():
     print('queueing an update job')
-    # don't want to do it immediately since, the API will probably take a moment to work correctly anyway
-    rq_job = current_app.task_queue.enqueue_in(timedelta(seconds=10), 'app.tasks.update_db')
+    # don't want to do it immediately since, the API will probably take a moment to work correctly anyway, but don't want to wait too long. Also wondering if starting it too fast might be causing it to get stuck?
+    rq_job = current_app.task_queue.enqueue_in(timedelta(seconds=7), 'app.tasks.update_db', at_front=True)
     
 def caches():
     print('queueing a cache checking job')
-    #for testing using less time than should, but considering the 5 minute cache time. Every 2.5 (150 seconds) mins might be reasonable? or even slower.
-    rq_job = current_app.task_queue.enqueue_in(timedelta(seconds=15), 'app.tasks.check_caches')
+    #for testing using less time than should, but considering the 5 minute cache time. Every 2.5 (150 seconds) mins might be reasonable? or even slower. 2.5 to 5 minutes will always check the cache once, faster than 2.5 will check the same cache more than once
+    rq_job = current_app.task_queue.enqueue_in(timedelta(seconds=150), 'app.tasks.check_caches')
     
     q_jobs = current_app.task_queue.jobs
     print('q_jobs: {}'.format(q_jobs)) 
